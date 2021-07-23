@@ -13,6 +13,7 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 const int DISPLAY_WIDTH = 16;
 int m_text_length = 0;
 
+// general
 void turnOff() {
   lcd.clear();
   lcd.noDisplay();
@@ -24,6 +25,7 @@ void turnOn() {
   lcd.backlight();
 }
 
+// Displayer
 void scroll() {
   Serial.println("scroll");
   int scrollWidth = m_text_length + 6 - DISPLAY_WIDTH;
@@ -58,53 +60,45 @@ void displayMessage(char* message, int text_length) {
 
 
 // ASK USER
-bool done = false;
-bool answer;
+volatile bool done = false;
+volatile bool answer;
 
 
-void checkButtons() {
-  Serial.println("Button-check");
-  if (digitalRead(YES_BUTTON_PIN) == HIGH) {
-    Serial.println("YES-Button pressed");
-    answer = true;
-    done = true;
-  } else if (digitalRead(NO_BUTTON_PIN) == HIGH) {
-    Serial.println("NO-Button pressed");
-    answer = false;
-    done = true;
-  } else {
-    Serial.println("NOTHING pressed");
-    done = false;
-  }
+void noButtonPressed() {
+  answer = false;
+  done = true;
 }
 
-Ticker displayer(scroll, 500);
-Ticker userInteraction(checkButtons, 1000, 5);
+void yesButtonPressed() {
+  answer = true;
+  done = true;
+}
 
 void resetFeedback() {
-  displayer.stop();
-  userInteraction.stop();
   answer = false;
   done = false;
+  detachInterrupt(0);
+  detachInterrupt(1);
 }
 
 bool askUser(char* message, int text_length) {
   resetFeedback();
   turnOn();
-  Serial.println(message);
+  
+  // setup
+  pinMode(YES_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(NO_BUTTON_PIN, INPUT_PULLUP);
+  
+  attachInterrupt(0, noButtonPressed, RISING);
+  attachInterrupt(1, yesButtonPressed, RISING);
+  
   m_text_length = text_length;
   lcd.begin(16, 2);
   // Print a message to the LCD.
   lcd.setCursor(3,0);
   lcd.print(message);
-  // setup
-  pinMode(YES_BUTTON_PIN, INPUT_PULLUP);
-  pinMode(NO_BUTTON_PIN, INPUT_PULLUP);
-  displayer.start();
-  userInteraction.start();
   while(!done) {
-    displayer.update();
-    userInteraction.update();
+    scroll();
   }
   turnOff();
   return answer;
@@ -127,6 +121,7 @@ void playSound() {
     }
 }
 
+Ticker displayer(scroll, 100);
 Ticker speaker(playSound, 100);
 
 void finishProgram(Tea* tea) {
@@ -140,15 +135,16 @@ void finishProgram(Tea* tea) {
   lcd.setCursor(3,0);
   lcd.print('Your tea ' + tea->m_name + ' is finish! Enjoy :)');
   pinMode(SOUND_PIN, OUTPUT);
-
+  
+  attachInterrupt(0, noButtonPressed, RISING);
+  attachInterrupt(1, yesButtonPressed, RISING);
+  
   displayer.start();
-  userInteraction.start();
   speaker.start();
   
   int i=0;
   while(i<8 || !done) {
     displayer.update();
-    userInteraction.update();
     speaker.update();
     i++;
   }
