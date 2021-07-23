@@ -2,32 +2,30 @@
 
 const int dt = 15;
 
-// servo-motor
+// teabag - servo motor
 #include <Servo.h>
-#define SERVO_PIN 8
-Servo servo;
+#define SERVO_PIN 7
+Servo servoTeabag;
 const int ANGLE_START = 10;
 const int ANGLE_END = 180;
 
 
-void transportTeabagToCup() {
-  servo.attach(SERVO_PIN);
-  servo.write(ANGLE_START);
-  
+void transportTeabagToCup() {  
   for(int angle=ANGLE_START; angle<ANGLE_END; angle++) {
-    servo.write(angle);
+    servoTeabag.write(angle);
     delay(dt);
   }
 }
 
 void removeTeabagFromCup() {
   for(int angle = ANGLE_END; angle>ANGLE_START; angle--) {
-    servo.write(angle);
+    servoTeabag.write(angle);
     delay(dt);
   }
 }
 
 void excecuteProgramm(const Tea* tea) {
+  servoTeabag.attach(SERVO_PIN);
   // bring teabag to cup
   transportTeabagToCup();
 

@@ -34,16 +34,12 @@ bool waterTempIsCorrect = false;
 int dt = 500;
 
 
-// -------- stepper motor
-#include <Stepper.h>
-
-#define STEPS_PER_REVOLUTION 2048
-#define MOT_SPEED 10
-#define ROTATION 1 
-
-Stepper myStepper(STEPS_PER_REVOLUTION, 4, 5, 6, 7);
-
-
+// -------- temp - servo motor
+#include <Servo.h>
+#define SERVO_PIN 6
+Servo servoTemp;
+const int ANGLE_START = 0;
+const int ANGLE_END = 180;
 
 //----------- SETUP CUP --------
 void checkForCup() {
@@ -108,8 +104,20 @@ void checkWater(double desiredWaterTemp, double roomTemp) {
   }
 }
 
-void moveTempSensor(int stepDirection) {
-   myStepper.step(ROTATION * STEPS_PER_REVOLUTION);
+void moveTempSensor(int rotDirection) {
+  Serial.println("Move temp sensor");
+  servoTemp.attach(SERVO_PIN);
+  int beginning = ANGLE_START;
+  int ending = ANGLE_END;
+  if(rotDirection != 1) {
+    beginning = ending;
+    ending = ANGLE_START;
+  }
+  
+  for(int angle=beginning; angle<ending; angle+rotDirection) {
+    servoTemp.write(angle);
+    delay(dt);
+  }
 }
 
 //-------SETUP TEABAG-------
@@ -205,7 +213,7 @@ Tea* startProgram() {
   tempSensors.begin();
   double roomTemp = getWaterTemp();
   // lower temperature sensor into cup
-  myStepper.setSpeed(MOT_SPEED);
+  //myStepper.setSpeed(MOT_SPEED);
   moveTempSensor(1);
   while(!waterTempIsCorrect) {
     Serial.println("wainting for correct water temp...");
