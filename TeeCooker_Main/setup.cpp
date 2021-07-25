@@ -5,11 +5,11 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #define ONE_WIRE_BUS 4
-#define DEVIATION 1
+#define DEVIATION 5
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
-// Pass our oneWire reference to Dallas Temperature. 
+// Pass our oneWire reference to Dallas Temperature.
 DallasTemperature tempSensors(&oneWire);
 
 
@@ -36,10 +36,10 @@ int dt = 500;
 
 // -------- temp - servo motor
 #include <Servo.h>
-#define SERVO_PIN 6
+#define TEMP_SERVO_PIN 6
 Servo servoTemp;
-const int ANGLE_START = 0;
-const int ANGLE_END = 180;
+const int ANGLE_START = 180;
+const int ANGLE_END = 70;
 
 //----------- SETUP CUP --------
 void checkForCup() {
@@ -51,8 +51,8 @@ void checkForCup() {
   if (analogValue == 0) {
     Serial.println("Cable is lose!");
     cupIsThere = false;
-  } else if(analogValue < DARK_VALUE) {
-      // cup is there
+  } else if (analogValue < DARK_VALUE) {
+    // cup is there
     Serial.println("Cup is there");
     cupIsThere = true;
   } else {
@@ -62,7 +62,7 @@ void checkForCup() {
 }
 
 double getWaterTemp() {
-  // call sensors.requestTemperatures() to issue a global temperature 
+  // call sensors.requestTemperatures() to issue a global temperature
   // request to all devices on the bus
   Serial.println("Requesting temperatures...");
   tempSensors.requestTemperatures(); // Send the command to get temperatures
@@ -71,52 +71,68 @@ double getWaterTemp() {
   // We use the function ByIndex, and as an example get the temperature from the first sensor only.
   float tempC = tempSensors.getTempCByIndex(0);
   // Check if reading was successful
-  if(tempC != DEVICE_DISCONNECTED_C) 
-  {
-    Serial.print("Temperature for the device 1 (index 0) is: ");
+  if (tempC != DEVICE_DISCONNECTED_C) {
+    Serial.print("Temperature: ");
     Serial.println(tempC);
     return tempC;
-  } 
-  else
-  {
+  } else {
     Serial.println("Error: Could not read temperature data");
     return;
   }
 }
 
-void checkWater(double desiredWaterTemp, double roomTemp) {
-  double temp = getWaterTemp();
-  displayMessage('Current Temperature: ' + (char)temp, 25);
-  // temp is room temperature
-  double tempDif = desiredWaterTemp - temp;
-  if(temp < (roomTemp + DEVIATION) && (temp > roomTemp - DEVIATION)) { // there is no water inside the cup - roomtemperature
-    displayMessage("Please fill the cup with water", 30);
-  } else if (tempDif > -5 && tempDif < 5) {
-    // temp is to high by "few" degrese
-    // wait till the water cools down
-  } else {
-    // temp is far too high/too cold
-    char* extrem = "hot";
-    if(desiredWaterTemp < temp) 
-      extrem = "cold";
-    // notify user to change the water
-    displayMessage('Current Temperature: ' + (char)temp + '/n The water is too ' + extrem + ' for this tea. Please change it', 50);
+void waiting(double desiredWaterTemp) {
+  while (true) {
+    double temp = getWaterTemp();
+    double tempDif = desiredWaterTemp - temp;
+    if (tempDif <= DEVIATION) { // right temp
+      displayMessage("The temperature", "is correct", 2000);
+      waterTempIsCorrect = true;
+      return;
+    }
   }
 }
 
-void moveTempSensor(int rotDirection) {
-  Serial.println("Move temp sensor");
-  servoTemp.attach(SERVO_PIN);
-  int beginning = ANGLE_START;
-  int ending = ANGLE_END;
-  if(rotDirection != 1) {
-    beginning = ending;
-    ending = ANGLE_START;
+void checkWater(double desiredWaterTemp, double roomTemp) {
+  double temp = getWaterTemp();
+  displayMessage('Temperature: ' + (char)(int)temp, "", 1000);
+  // temp is room temperature
+  double tempDif = desiredWaterTemp - temp;
+  if (tempDif <= DEVIATION) { // right temp
+    displayMessage("The temperature", "is correct", 2000);
+    waterTempIsCorrect = true;
+  } else if (temp == roomTemp) { // roomtemperature -> there is no water inside the cup
+    displayMessage("Cup is empthy", "Please fill it", 2000);
+  } else if (tempDif <= DEVIATION + 3) {
+    // temp is to high by "few" degrese
+    // wait till the water cools down
+    displayMessage("The temperature", "is a bit too hot", 2000);
+    displayMessage("Please wait till", "it colds down", 2000);
+    waiting(desiredWaterTemp);
+  } else {
+    // temp is far too high/too cold
+    char* message = "This is too cold";
+    if (desiredWaterTemp < temp)
+      message = "This is too hot";
+    // notify user to change the water
+    displayMessage(message, "Please change it", 2000);
+    displayMessage("It needs to be", "100 grad", 2000);
   }
-  
-  for(int angle=beginning; angle<ending; angle+rotDirection) {
+}
+
+void bringTempSensor() {
+  for (int angle = ANGLE_START; angle > ANGLE_END; angle--) {
     servoTemp.write(angle);
-    delay(dt);
+    Serial.println(angle);
+    delay(15);
+  }
+}
+
+void removeTempSensor() {
+  for (int angle = ANGLE_END; angle < ANGLE_START; angle++) {
+    servoTemp.write(angle);
+    Serial.println(angle);
+    delay(15);
   }
 }
 
@@ -140,7 +156,7 @@ int calculateTea() {
   Serial.println(gruen);
   if (rot < blau && rot < gruen && rot < 20) {
     return 3;
-  } else if (blau < rot && blau < gruen) { 
+  } else if (blau < rot && blau < gruen) {
     return 2;
   } else if (gruen < rot && gruen < blau) {
     return 1;
@@ -149,22 +165,22 @@ int calculateTea() {
   }
 }
 
-Tea* checkForTeebag() { // TODO: add color sensor test
+Tea* checkForTeabag() { // TODO: add color sensor test
   digitalWrite(colorS0, HIGH);
   digitalWrite(colorS1, HIGH);
   color();
   int tea = calculateTea();
   Serial.print("choose:");
   Serial.println(tea);
-  if(tea == 0)
+  if (tea == 0)
     return;
   Tea* choosenTea = getTea(tea);
   Serial.print("You choose the tea: ");
   Serial.println(choosenTea->m_name);
   char* teaSpecs = 'The tea will be brewed for ' + (char)choosenTea->m_brewingTime + ' min in water with a temperature of ' + (char)choosenTea->m_waterTemp + ' degrees.';
-  displayMessage('You choose the tea: ' + choosenTea->m_name, 35);
+  displayMessage("Your choice is:", choosenTea->m_name, 3000);
   Serial.println(teaSpecs);
-  if(askUser("Are you happy with your choice?", 31)) {
+  if (askUser("Are you happy", "with the choice?")) {
     teabagIsThere = true;
     Serial.println("Teabag there");
     return choosenTea;
@@ -177,8 +193,9 @@ Tea* checkForTeebag() { // TODO: add color sensor test
 
 Tea* startProgram() {
   Tea* tea;
-  displayMessage("Let's brew some tea! :)", 23);
-  while(!askUser("Do you want to start?", 21)) {}
+  finishProgram(tea);
+  displayMessage("Let's brew some", "tea! :)", 2000);
+  while (!askUser("Do you want to", "start?")) {}
   // check for teebag
   // setup color sensor
   pinMode(colorS0, OUTPUT);
@@ -188,40 +205,38 @@ Tea* startProgram() {
   pinMode(colorOut, INPUT);
   digitalWrite(colorS0, LOW);
   digitalWrite(colorS1, LOW);
-  while(!teabagIsThere) {
-    Serial.println("Wainting for teabag...");
-    tea = checkForTeebag();
-    Serial.println("Are you happy with your choice?");
+  while (!teabagIsThere) {
+    displayMessage("Scan a tea...", "", 500);
+    tea = checkForTeabag();
     delay(dt);
   } // teabag is ready
   // TODO: switch sensor off
   digitalWrite(colorS0, LOW);
   digitalWrite(colorS1, LOW);
-  Serial.println("teabag is ready");
-  
-  // check for cup 
-  while(!cupIsThere) {
-    Serial.println("wainting for cup...");
-    displayMessage("Wainting for a cup...", 21);
+
+  // check for cup
+  displayMessage("Wainting for a", "cup...", 500);
+  while (!cupIsThere) {
     checkForCup();
     delay(dt);
   } // cup is ready
-  Serial.println("Cup is ready");
-  
+  displayMessage("The cup is ready", "", 800);
+
   // check water temp
   // setup
   tempSensors.begin();
   double roomTemp = getWaterTemp();
+  Serial.println("Room-Temperature: " + (char)roomTemp);
+  displayMessage("Checking the", "water temp...", 800);
   // lower temperature sensor into cup
-  //myStepper.setSpeed(MOT_SPEED);
-  moveTempSensor(1);
-  while(!waterTempIsCorrect) {
+  servoTemp.attach(TEMP_SERVO_PIN);
+  bringTempSensor();
+  while (!waterTempIsCorrect) {
     Serial.println("wainting for correct water temp...");
     checkWater(tea->m_waterTemp, roomTemp);
     delay(dt);
   } // cup is ready
-  moveTempSensor(-1);
-  Serial.println("water is ready");
+  removeTempSensor();
 
   return tea;
 }

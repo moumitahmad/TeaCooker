@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #include "dataService.h"
 
-void displayMessage(char* message, int text_length);
-bool askUser(char* message, int text_length); // true=yes; false=no
+void displayMessage(char* line1, char* line2, int dt);
+bool askUser(char* line1, char* line2); // true=yes; false=no
 
 void finishProgram(Tea* tea);
 

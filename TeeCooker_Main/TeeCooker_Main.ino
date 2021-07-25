@@ -5,7 +5,7 @@
 
 // Phase defines the current marchine state
 enum Phase {
-  SETUP, 
+  SETUP,
   EXCECUTE,
   FEEDBACK
 };
@@ -19,19 +19,19 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  switch(phase) {
+  switch (phase) {
     case SETUP:
       Serial.println("Start phase SETUP.");
       tea = startProgram();
-      phase = EXCECUTE; 
+      phase = EXCECUTE;
       break;
-    case EXCECUTE: 
+    case EXCECUTE:
       Serial.println("Start phase EXCECUTE.");
       excecuteProgramm(tea);
-      phase = FEEDBACK;  
+      phase = FEEDBACK;
       break;
     case FEEDBACK:
-      Serial.println("Start phase FEEDBACK."); 
+      Serial.println("Start phase FEEDBACK.");
       finishProgram(tea);
       break;
     default:

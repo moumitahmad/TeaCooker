@@ -6,12 +6,10 @@
 
 #define YES_BUTTON_PIN 3
 #define NO_BUTTON_PIN 2
-#define SOUND_PIN 1
+#define YES_BUTTON_NOTE  1568
+#define NO_BUTTON_NOTE  1319
 
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
-
-const int DISPLAY_WIDTH = 16;
-int m_text_length = 0;
 
 // general
 void turnOff() {
@@ -25,127 +23,75 @@ void turnOn() {
   lcd.backlight();
 }
 
-// Displayer
-void scroll() {
-  Serial.println("scroll");
-  int scrollWidth = m_text_length + 6 - DISPLAY_WIDTH;
-  // to move it offscreen left:
-  for (int positionCounter = 0; positionCounter < scrollWidth; positionCounter++) {
-    // scroll one position left:
-    lcd.scrollDisplayLeft();
-    // wait a bit:
-    delay(300);
-  }
-
-  // to move it offscreen right:
-  for (int positionCounter = 0; positionCounter < scrollWidth; positionCounter++) {
-    // scroll one position right:
-    lcd.scrollDisplayRight();
-    // wait a bit:
-    delay(400);
-  }
+void resetDisplay() {
+  lcd.clear();
 }
 
-void displayMessage(char* message, int text_length) {
-  turnOn();
-  Serial.println(message);
-  m_text_length = text_length;
+void displayMessage(char* line1, char* line2, int dt) {
+  resetDisplay();
   lcd.begin(16, 2);
   // Print a message to the LCD.
-  lcd.setCursor(3,0);
-  lcd.print(message);
-  scroll();
-  turnOff();
+  lcd.setCursor(0,0);
+  lcd.print(line1);
+  lcd.setCursor(0,1);
+  lcd.print(line2);
+  delay(dt);
 }
 
 
 // ASK USER
-volatile bool done = false;
-volatile bool answer;
+bool done = false;
+bool answer;
 
 
-void noButtonPressed() {
-  answer = false;
-  done = true;
-}
-
-void yesButtonPressed() {
-  answer = true;
-  done = true;
+void checkButton() {
+  if(digitalRead(YES_BUTTON_PIN)==HIGH) { // button is clicked
+    Serial.println("YES");
+    answer = true;
+    done = true;
+  } else if(digitalRead(NO_BUTTON_PIN)==HIGH) { // button is clicked
+    Serial.println("NO");
+    answer = false;
+    done = true;
+  } else {
+    Serial.println("NOTHING");
+  }
 }
 
 void resetFeedback() {
   answer = false;
   done = false;
-  detachInterrupt(0);
-  detachInterrupt(1);
 }
 
-bool askUser(char* message, int text_length) {
+bool askUser(char* line1, char* line2) {
   resetFeedback();
-  turnOn();
-  
   // setup
   pinMode(YES_BUTTON_PIN, INPUT_PULLUP);
-  pinMode(NO_BUTTON_PIN, INPUT_PULLUP);
-  
-  attachInterrupt(0, noButtonPressed, RISING);
-  attachInterrupt(1, yesButtonPressed, RISING);
-  
-  m_text_length = text_length;
+  pinMode(NO_BUTTON_PIN, INPUT_PULLUP);  
   lcd.begin(16, 2);
   // Print a message to the LCD.
-  lcd.setCursor(3,0);
-  lcd.print(message);
+  lcd.setCursor(0, 0);
+  lcd.print(line1);
+  lcd.setCursor(0, 1);
+  lcd.print(line2);
+
   while(!done) {
-    scroll();
+    checkButton();
+    delay(300);
   }
-  turnOff();
   return answer;
 }
 
-void playSound() {
-  // inspired by https://forum.arduino.cc/t/piezo-buzzer-win-and-fail-sound/133792
-  int melody[] = {
-  262, 196,196, 220, 196,0, 247, 262};
-  // note durations: 4 = quarter note, 8 = eighth note, etc.:
-  int noteDurations[] = {
-  4, 8, 8, 4,4,4,4,4 };
-
-    for (int thisNote = 0; thisNote < 8; thisNote++) {
-      int noteDuration = 1000/noteDurations[thisNote];
-      tone(SOUND_PIN, melody[thisNote]*8,noteDuration);
-      int pauseBetweenNotes = noteDuration * 1.50;
-      delay(pauseBetweenNotes);
-      noTone(SOUND_PIN);
-    }
-}
-
-Ticker displayer(scroll, 100);
-Ticker speaker(playSound, 100);
-
 void finishProgram(Tea* tea) {
   // setup
-  resetFeedback();
-  turnOn();
-  Serial.println(tea->m_name);
-  m_text_length = 35;
+  //Serial.println(tea->m_name);
   lcd.begin(16, 2);
   // Print a message to the LCD.
-  lcd.setCursor(3,0);
-  lcd.print('Your tea ' + tea->m_name + ' is finish! Enjoy :)');
-  pinMode(SOUND_PIN, OUTPUT);
-  
-  attachInterrupt(0, noButtonPressed, RISING);
-  attachInterrupt(1, yesButtonPressed, RISING);
-  
-  displayer.start();
-  speaker.start();
+  displayMessage("The tea is done!", "Enjoy :)", 300);
   
   int i=0;
-  while(i<8 || !done) {
-    displayer.update();
-    speaker.update();
+  while(i<8) {
+    delay(500);
     i++;
   }
   turnOff();

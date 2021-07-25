@@ -7,6 +7,6 @@ Tea* getTea(int tea) {
     case 2:
       return new Tea("Pfefferminze", 6, 100); 
     case 3:
-     return new Tea("Erdbeer-Minze", 6.5, 100); 
+     return new Tea("Erdbeer-Minze", 0.5, 21);//6.5; 100 
   }
 }
