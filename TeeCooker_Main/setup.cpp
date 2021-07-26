@@ -193,7 +193,6 @@ Tea* checkForTeabag() { // TODO: add color sensor test
 
 Tea* startProgram() {
   Tea* tea;
-  finishProgram(tea);
   displayMessage("Let's brew some", "tea! :)", 2000);
   while (!askUser("Do you want to", "start?")) {}
   // check for teebag
