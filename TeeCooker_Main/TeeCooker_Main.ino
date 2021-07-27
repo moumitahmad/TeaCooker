@@ -3,6 +3,7 @@
 #include "excecute.h"
 #include "userFeedback.h"
 
+
 // Phase defines the current marchine state
 enum Phase {
   SETUP,
@@ -33,6 +34,7 @@ void loop() {
     case FEEDBACK:
       Serial.println("Start phase FEEDBACK.");
       finishProgram(tea);
+      phase = SETUP;
       break;
     default:
       Serial.println("The choosen phase is not defined.");

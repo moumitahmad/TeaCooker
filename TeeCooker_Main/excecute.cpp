@@ -8,7 +8,7 @@ const int dt = 15;
 #define SERVO_PIN 7
 Servo servoTeabag;
 const int ANGLE_START = 90;
-const int ANGLE_END = 180;
+const int ANGLE_END = 175;
 
 
 void transportTeabagToCup() {

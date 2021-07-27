@@ -8,6 +8,8 @@
 #define NO_BUTTON_PIN 2
 #define YES_BUTTON_NOTE  1568
 #define NO_BUTTON_NOTE  1319
+#define SOUND_PIN 5
+
 
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 
@@ -93,6 +95,26 @@ bool askUser(char* line1, char* line2) {
   return answer;
 }
 
+void playSound() {
+  // inspired by https://forum.arduino.cc/t/piezo-buzzer-win-and-fail-sound/133792
+  int melody[] = {
+    262, 196, 196, 220, 196, 0, 247, 262
+  };
+
+  // note durations: 4 = quarter note, 8 = eighth note, etc.:
+  int noteDurations[] = {
+    4, 8, 8, 4, 4, 4, 4, 4
+  };
+
+  for (int thisNote = 0; thisNote < 8; thisNote++) {
+    int noteDuration = 1000 / noteDurations[thisNote];
+    tone(SOUND_PIN, melody[thisNote] * 8, noteDuration);
+    int pauseBetweenNotes = noteDuration * 1.50;
+    delay(pauseBetweenNotes);
+    noTone(SOUND_PIN);
+  }
+}
+
 void finishProgram(Tea* tea) {
   // setup
   //Serial.println(tea->m_name);
@@ -101,8 +123,10 @@ void finishProgram(Tea* tea) {
   displayMessage("The tea is done!", "Enjoy :)", 300);
   
   int i=0;
-  while(i<8) {
-    delay(500);
+  tone(SOUND_PIN, 500);
+  while(i<5) {
+    //delay(500);
+    playSound();
     i++;
   }
   turnOff();
