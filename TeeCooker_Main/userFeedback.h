@@ -5,6 +5,7 @@
 #include "dataService.h"
 
 void displayMessage(char* line1, char* line2, int dt);
+void displayMessage(char* line1, double amount, int dt);
 bool askUser(char* line1, char* line2); // true=yes; false=no
 
 void finishProgram(Tea* tea);

@@ -5,7 +5,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #define ONE_WIRE_BUS 4
-#define DEVIATION 5
+#define DEVIATION 15
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
@@ -26,11 +26,11 @@ int blau = 0;
 
 // -------- ligth sensor
 #define LIGHTPIN A0
-const int DARK_VALUE = 300;
+const int DARK_VALUE = 100;
 bool setupIsFinished = false;
 bool teabagIsThere = false;
 bool cupIsThere = false;
-bool waterTempIsCorrect = false;
+bool waterTempIsCorrect = true;//false;
 int dt = 500;
 
 
@@ -95,7 +95,7 @@ void waiting(double desiredWaterTemp) {
 
 void checkWater(double desiredWaterTemp, double roomTemp) {
   double temp = getWaterTemp();
-  displayMessage('Temperature: ' + (char)(int)temp, "", 1000);
+  displayMessage("Temperature: ", temp, 1000);
   // temp is room temperature
   double tempDif = desiredWaterTemp - temp;
   if (tempDif <= DEVIATION) { // right temp
@@ -116,7 +116,7 @@ void checkWater(double desiredWaterTemp, double roomTemp) {
       message = "This is too hot";
     // notify user to change the water
     displayMessage(message, "Please change it", 2000);
-    displayMessage("It needs to be", "100 grad", 2000);
+    displayMessage("It needs to be", temp, 2000);
   }
 }
 

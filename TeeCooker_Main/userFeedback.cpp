@@ -38,6 +38,17 @@ void displayMessage(char* line1, char* line2, int dt) {
   delay(dt);
 }
 
+void displayMessage(char* line1, double amount, int dt) {
+  resetDisplay();
+  lcd.begin(16, 2);
+  // Print a message to the LCD.
+  lcd.setCursor(0,0);
+  lcd.print(line1);
+  lcd.setCursor(0,1);
+  lcd.print(amount);
+  delay(dt);
+}
+
 
 // ASK USER
 bool done = false;
