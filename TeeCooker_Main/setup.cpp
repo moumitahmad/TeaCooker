@@ -223,7 +223,7 @@ Tea* startProgram() {
 
   // check water temp
   // setup
-  /*tempSensors.begin();
+  tempSensors.begin();
   double roomTemp = getWaterTemp();
   Serial.println("Room-Temperature: " + (char)roomTemp);
   displayMessage("Checking the", "water temp...", 800);
@@ -235,7 +235,7 @@ Tea* startProgram() {
     checkWater(tea->m_waterTemp, roomTemp);
     delay(dt);
   } // cup is ready
-  removeTempSensor();*/
+  removeTempSensor();
 
   return tea;
 }
